@@ -85,18 +85,27 @@ def _bedrock_knowledge_base_search(
                 }
             },
         }
-        if filter_metadata:
-            retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = filter_metadata  # type: ignore
-            logger.info(f"Applying filter metadata: {filter_metadata}")
         if bot.bedrock_knowledge_base.type == "shared":
             # Specify the Bot ID as a filter condition for the shared Knowledge Base.
-            retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = {  # type: ignore
+            shared_filter = {
                 "listContains": {
                     "key": "tenants",
                     # Note: metadata is attached on cdk/lambda/knowledge-base-custom-transformation/index.ts
                     "value": f"BOT#{bot.id}",  # type: ignore
                 },
             }
+            if filter_metadata:
+                # Combine shared KB tenant filter with user-supplied filter using andAll
+                combined_filter = {
+                    "andAll": [shared_filter, filter_metadata]
+                }
+                retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = combined_filter  # type: ignore
+                logger.info(f"Applying combined filter (shared + metadata): {combined_filter}")
+            else:
+                retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = shared_filter  # type: ignore
+        elif filter_metadata:
+            retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = filter_metadata  # type: ignore
+            logger.info(f"Applying filter metadata: {filter_metadata}")
 
         # Omit overrideSearchType parameter if needed
         def omit_override_search_type_parameter(
