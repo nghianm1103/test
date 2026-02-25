@@ -90,6 +90,7 @@ def converse_with_strands(
         prompt_caching_enabled=prompt_caching_enabled,
         has_tools=has_tools,
         hooks=[tool_capture],
+        filter_metadata=chat_input.filter_metadata,
     )
 
     thinking_log: list[SimpleMessageModel] = []

@@ -257,7 +257,9 @@ def chat(
                         }
                     )
 
-                search_results = search_related_docs(bot=bot, query=content.body)
+                search_results = search_related_docs(
+                    bot=bot, query=content.body, filter_metadata=chat_input.filter_metadata
+                )
                 logger.info(f"Search results from vector store: {search_results}")
 
                 if on_tool_result:

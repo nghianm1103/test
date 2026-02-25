@@ -20,7 +20,8 @@ class KnowledgeToolInput(BaseModel):
 
 
 def search_knowledge(
-    tool_input: KnowledgeToolInput, bot: BotModel | None, model: type_model_name | None
+    tool_input: KnowledgeToolInput, bot: BotModel | None, model: type_model_name | None,
+    filter_metadata: dict | None = None,
 ) -> list:
     assert bot is not None
 
@@ -31,6 +32,7 @@ def search_knowledge(
         search_results = search_related_docs(
             bot,
             query=query,
+            filter_metadata=filter_metadata,
         )
 
         # # For testing purpose

@@ -47,7 +47,9 @@ def search_result_to_related_document(
     )
 
 
-def _bedrock_knowledge_base_search(bot: BotModel, query: str) -> list[SearchResult]:
+def _bedrock_knowledge_base_search(
+        bot: BotModel, query: str, filter_metadata: dict[str, Any] | None = None
+    ) -> list[SearchResult]:
     assert bot.bedrock_knowledge_base is not None
     assert (
         bot.bedrock_knowledge_base.knowledge_base_id is not None
@@ -83,6 +85,9 @@ def _bedrock_knowledge_base_search(bot: BotModel, query: str) -> list[SearchResu
                 }
             },
         }
+        if filter_metadata:
+            retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = filter_metadata  # type: ignore
+            logger.info(f"Applying filter metadata: {filter_metadata}")
         if bot.bedrock_knowledge_base.type == "shared":
             # Specify the Bot ID as a filter condition for the shared Knowledge Base.
             retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = {  # type: ignore
@@ -191,5 +196,7 @@ def _bedrock_knowledge_base_search(bot: BotModel, query: str) -> list[SearchResu
         raise e
 
 
-def search_related_docs(bot: BotModel, query: str) -> list[SearchResult]:
-    return _bedrock_knowledge_base_search(bot, query)
+def search_related_docs(
+    bot: BotModel, query: str, filter_metadata: dict[str, Any] | None = None
+) -> list[SearchResult]:
+    return _bedrock_knowledge_base_search(bot, query, filter_metadata)

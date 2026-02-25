@@ -1,4 +1,4 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Any
 
 from app.repositories.models.common import Base64EncodedBytes
 from app.routes.schemas.base import BaseSchema
@@ -201,6 +201,7 @@ class ChatInput(BaseSchema):
     bot_id: str | None = Field(None)
     continue_generate: bool = Field(False)
     enable_reasoning: bool = Field(False)
+    filter_metadata: dict[str, Any] | None = Field(None)
 
 
 class ChatOutput(BaseSchema):

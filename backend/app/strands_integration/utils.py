@@ -31,7 +31,8 @@ def get_strands_registered_tools(bot: BotModel | None = None) -> list[StrandsAge
 
 
 def get_strands_tools(
-    bot: BotModel | None, model_name: type_model_name
+    bot: BotModel | None, model_name: type_model_name,
+    filter_metadata: dict | None = None,
 ) -> list[StrandsAgentTool]:
     """
     Get Strands tools based on bot configuration.
@@ -69,7 +70,7 @@ def get_strands_tools(
             create_knowledge_search_tool,
         )
 
-        knowledge_tool = create_knowledge_search_tool(bot)
+        knowledge_tool = create_knowledge_search_tool(bot, filter_metadata=filter_metadata)
         tools.append(knowledge_tool)
 
     if len(tools) == 0:

@@ -235,6 +235,8 @@ def handler(event, context):
                 message_data["bot_id"] = message_data.pop("botId")
             if "enableReasoning" in message_data:
                 message_data["enable_reasoning"] = message_data.pop("enableReasoning")
+            if "filterMetadata" in message_data:
+                message_data["filter_metadata"] = message_data.pop("filterMetadata")
             
             # Convert message fields
             if "message" in message_data:

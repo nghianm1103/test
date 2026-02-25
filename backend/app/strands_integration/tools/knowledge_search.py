@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-def _search_knowledge_standalone(bot: BotModel, query: str) -> list:
+def _search_knowledge_standalone(bot: BotModel, query: str, filter_metadata: dict | None = None) -> list:
     """Standalone knowledge search implementation."""
     try:
         from app.vector_search import search_related_docs
 
         logger.info(f"Running knowledge search with query: {query}")
 
-        search_results = search_related_docs(bot, query=query)
+        search_results = search_related_docs(bot, query=query, filter_metadata=filter_metadata)
 
         logger.info(f"Knowledge search completed. Found {len(search_results)} results")
         return search_results
@@ -29,7 +29,7 @@ def _search_knowledge_standalone(bot: BotModel, query: str) -> list:
         raise e
 
 
-def create_knowledge_search_tool(bot: BotModel | None) -> StrandsAgentTool:
+def create_knowledge_search_tool(bot: BotModel | None, filter_metadata: dict | None = None) -> StrandsAgentTool:
     """Create a knowledge search tool with bot context captured in closure."""
 
     @tool
@@ -79,7 +79,7 @@ def create_knowledge_search_tool(bot: BotModel | None) -> StrandsAgentTool:
             )
 
             # Run knowledge search
-            results = _search_knowledge_standalone(current_bot, query)
+            results = _search_knowledge_standalone(current_bot, query, filter_metadata=filter_metadata)
 
             logger.debug(f"[KNOWLEDGE_SEARCH_V3] Search completed successfully")
             return {
