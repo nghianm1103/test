@@ -262,7 +262,11 @@ def handler(event, context):
                 from ulid import ULID
                 message_data["conversation_id"] = str(ULID())
             
+            logger.info(f"[PUB_WS] Message data keys: {list(message_data.keys())}")
+            logger.info(f"[PUB_WS] filter_metadata value: {message_data.get('filter_metadata')}")
+            
             chat_input = ChatInput(**message_data)
+            logger.info(f"[PUB_WS] ChatInput created - filter_metadata: {chat_input.filter_metadata}")
             if "bot_id" not in message_data:
                 chat_input.bot_id = BOT_ID
 

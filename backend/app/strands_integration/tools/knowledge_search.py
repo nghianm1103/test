@@ -79,6 +79,7 @@ def create_knowledge_search_tool(bot: BotModel | None, filter_metadata: dict | N
             )
 
             # Run knowledge search
+            logger.info(f"[KNOWLEDGE_SEARCH_V3] filter_metadata from closure: {filter_metadata}")
             results = _search_knowledge_standalone(current_bot, query, filter_metadata=filter_metadata)
 
             logger.debug(f"[KNOWLEDGE_SEARCH_V3] Search completed successfully")

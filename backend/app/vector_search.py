@@ -50,6 +50,8 @@ def search_result_to_related_document(
 def _bedrock_knowledge_base_search(
         bot: BotModel, query: str, filter_metadata: dict[str, Any] | None = None
     ) -> list[SearchResult]:
+    logger.info(f"[KB_SEARCH] Bot ID: {bot.id}, has KB: {bot.bedrock_knowledge_base is not None}, filter_metadata: {filter_metadata}")
+    
     assert bot.bedrock_knowledge_base is not None
     assert (
         bot.bedrock_knowledge_base.knowledge_base_id is not None
@@ -133,6 +135,8 @@ def _bedrock_knowledge_base_search(
             omit_override_search_type_parameter(retrieve_parameter)
 
         # Send retrieve request
+        filter_applied = retrieve_parameter.get('retrievalConfiguration', {}).get('vectorSearchConfiguration', {}).get('filter')
+        logger.info(f"[KB_SEARCH] About to retrieve with filter: {filter_applied}")
         response = agent_client.retrieve(**retrieve_parameter)
 
         def extract_source_from_retrieval_result(
