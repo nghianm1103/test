@@ -327,8 +327,8 @@
       });
 
       const WS_ENDPOINT =
-        "wss://79t6cwpnw0.execute-api.us-east-1.amazonaws.com/prod";
-      const API_KEY = "6bWNYHhvAh6lNxxK97mwB4jgImTBfLpA73kpCxbW";
+        "wss://tsutz2r4y7.execute-api.us-east-1.amazonaws.com/prod";
+      const API_KEY = "Hn5vuO1PKG6SzDwD7JtSK4914Az5LEVz5oU6UJil";
       const CHUNK_SIZE = 32 * 1024;
       const PostStreamingStatus = {
         START: "START",
@@ -501,7 +501,15 @@
         }
 
         // Prepare payload in camelCase format
-        const payload = JSON.stringify({
+        const filterMetadataValue = {
+          equals: {
+            key: "type",
+            value: "sau_dai_hoc1",
+          },
+        };
+        console.log("[HTML] filterMetadata being sent:", JSON.stringify(filterMetadataValue));
+
+        const payloadObj = {
           conversationId: conversationId,
           message: {
             content: [{ body: message, contentType: "text" }],
@@ -512,15 +520,15 @@
             thinkingLog: null,
             parentMessageId: lastMessageId,
           },
-          botId: "01KJ9VQ4GMYGF3ZT9ZKK6ZACQR",
+          botId: "01KJA0S3W528GYDXSB4YRK555C",
           enableReasoning: false,
-          filterMetadata: {
-            equals: {
-              key: "type",
-              value: "sau_dai_hoc1",
-            },
-          },
-        });
+          filterMetadata: filterMetadataValue,
+        };
+        console.log("[HTML] Full payload keys:", Object.keys(payloadObj));
+        console.log("[HTML] payloadObj.filterMetadata:", payloadObj.filterMetadata);
+        const payload = JSON.stringify(payloadObj);
+        console.log("[HTML] Payload length:", payload.length);
+        console.log("[HTML] filterMetadata in JSON string (check):", payload.includes('filterMetadata'));
 
         // Chunk payload
         const chunks = [];
@@ -537,6 +545,7 @@
           const ws = new WebSocket(WS_ENDPOINT);
 
           ws.onopen = () => {
+            console.log("[HTML] WebSocket opened, sending START");
             ws.send(
               JSON.stringify({
                 step: PostStreamingStatus.START,
@@ -549,6 +558,7 @@
             const data = event.data;
 
             if (data === "Session started.") {
+              console.log(`[HTML] Session started. Sending ${chunks.length} chunk(s), total payload size: ${payload.length} bytes`);
               chunks.forEach((chunk, index) => {
                 ws.send(
                   JSON.stringify({
@@ -563,7 +573,9 @@
 
             if (data === "Message part received.") {
               receivedCount++;
+              console.log(`[HTML] Chunk ${receivedCount}/${chunks.length} acknowledged`);
               if (receivedCount === chunks.length) {
+                console.log("[HTML] All chunks sent, sending END");
                 ws.send(
                   JSON.stringify({
                     step: PostStreamingStatus.END,
@@ -580,6 +592,9 @@
 
             try {
               const parsed = JSON.parse(data);
+              if (parsed.status && parsed.status !== PostStreamingStatus.STREAMING) {
+                console.log("[HTML] Received status:", parsed.status);
+              }
 
               if (parsed.status === PostStreamingStatus.STREAMING) {
                 hideLoading();

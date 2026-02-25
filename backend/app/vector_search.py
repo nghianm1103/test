@@ -50,7 +50,12 @@ def search_result_to_related_document(
 def _bedrock_knowledge_base_search(
         bot: BotModel, query: str, filter_metadata: dict[str, Any] | None = None
     ) -> list[SearchResult]:
-    logger.info(f"[KB_SEARCH] Bot ID: {bot.id}, has KB: {bot.bedrock_knowledge_base is not None}, filter_metadata: {filter_metadata}")
+    logger.info(f"[KB_SEARCH] ===== START =====")
+    logger.info(f"[KB_SEARCH] Bot ID: {bot.id}")
+    logger.info(f"[KB_SEARCH] Has KB: {bot.bedrock_knowledge_base is not None}")
+    logger.info(f"[KB_SEARCH] KB type: {bot.bedrock_knowledge_base.type if bot.bedrock_knowledge_base else 'N/A'}")
+    logger.info(f"[KB_SEARCH] filter_metadata received: {filter_metadata}")
+    logger.info(f"[KB_SEARCH] query: {query}")
     
     assert bot.bedrock_knowledge_base is not None
     assert (
@@ -87,6 +92,7 @@ def _bedrock_knowledge_base_search(
                 }
             },
         }
+        logger.info(f"[KB_SEARCH] KB type check: '{bot.bedrock_knowledge_base.type}'")
         if bot.bedrock_knowledge_base.type == "shared":
             # Specify the Bot ID as a filter condition for the shared Knowledge Base.
             shared_filter = {
@@ -96,18 +102,22 @@ def _bedrock_knowledge_base_search(
                     "value": f"BOT#{bot.id}",  # type: ignore
                 },
             }
+            logger.info(f"[KB_SEARCH] Shared KB - shared_filter: {shared_filter}")
             if filter_metadata:
                 # Combine shared KB tenant filter with user-supplied filter using andAll
                 combined_filter = {
                     "andAll": [shared_filter, filter_metadata]
                 }
                 retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = combined_filter  # type: ignore
-                logger.info(f"Applying combined filter (shared + metadata): {combined_filter}")
+                logger.info(f"[KB_SEARCH] Combined filter applied: {combined_filter}")
             else:
                 retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = shared_filter  # type: ignore
+                logger.info(f"[KB_SEARCH] Only shared filter applied (no filter_metadata)")
         elif filter_metadata:
             retrieve_parameter["retrievalConfiguration"]["vectorSearchConfiguration"]["filter"] = filter_metadata  # type: ignore
-            logger.info(f"Applying filter metadata: {filter_metadata}")
+            logger.info(f"[KB_SEARCH] Dedicated KB - filter_metadata applied: {filter_metadata}")
+        else:
+            logger.info(f"[KB_SEARCH] NO filter applied - KB type: {bot.bedrock_knowledge_base.type}, filter_metadata: {filter_metadata}")
 
         # Omit overrideSearchType parameter if needed
         def omit_override_search_type_parameter(

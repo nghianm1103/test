@@ -226,7 +226,10 @@ def handler(event, context):
             full_message = "".join(item["MessagePart"] for item in message_parts)
 
             # Process chat
+            logger.info(f"[PUB_WS] Raw full_message (first 500 chars): {full_message[:500]}")
             message_data = json.loads(full_message)
+            logger.info(f"[PUB_WS] Parsed keys: {list(message_data.keys())}")
+            logger.info(f"[PUB_WS] 'filterMetadata' present before conversion: {'filterMetadata' in message_data}")
             
             # Convert camelCase to snake_case for backend compatibility
             if "conversationId" in message_data:
@@ -262,11 +265,16 @@ def handler(event, context):
                 from ulid import ULID
                 message_data["conversation_id"] = str(ULID())
             
-            logger.info(f"[PUB_WS] Message data keys: {list(message_data.keys())}")
+            logger.info(f"[PUB_WS] Message data keys after conversion: {list(message_data.keys())}")
             logger.info(f"[PUB_WS] filter_metadata value: {message_data.get('filter_metadata')}")
             
-            chat_input = ChatInput(**message_data)
-            logger.info(f"[PUB_WS] ChatInput created - filter_metadata: {chat_input.filter_metadata}")
+            try:
+                chat_input = ChatInput(**message_data)
+            except Exception as parse_err:
+                logger.error(f"[PUB_WS] ChatInput parse error: {parse_err}")
+                raise
+            logger.info(f"[PUB_WS] ChatInput.filter_metadata: {chat_input.filter_metadata}")
+            logger.info(f"[PUB_WS] ChatInput.bot_id: {chat_input.bot_id}")
             if "bot_id" not in message_data:
                 chat_input.bot_id = BOT_ID
 
