@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Techfest Chatbot</title>
+    <title>HMU Chatbot</title>
     <style>
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
@@ -65,10 +65,11 @@
       .assistant .message-avatar {
         background: white;
         padding: 2px;
+        box-shadow: 0 2px 8px rgba(0,115,187,0.15);
       }
       .assistant .message-avatar img {
         width: 100%;
-        height: 100%;
+        height: auto;
         object-fit: contain;
         border-radius: 8px;
       }
@@ -292,20 +293,148 @@
         margin-top: 3em;
         margin-bottom: 3em;
       }
+
+      /* Selection panel inside chat */
+      #selection-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        gap: 24px;
+        padding: 20px;
+      }
+      .selection-cards {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .selection-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 32px 40px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: center;
+        min-width: 180px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      }
+      .selection-card:hover {
+        border-color: #0073bb;
+        box-shadow: 0 4px 16px rgba(0,115,187,0.15);
+        transform: translateY(-2px);
+      }
+      .selection-card .card-icon {
+        font-size: 2.5rem;
+        margin-bottom: 12px;
+      }
+      .selection-card .card-label {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #111827;
+      }
+      .selection-card .card-sub {
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-top: 4px;
+      }
+
+      /* Chat screen */
+      #chat-screen {
+        display: block;
+      }
+      #chat-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      #chat-header h1 {
+        margin: 0;
+        font-size: 1.4rem;
+      }
+      #chat-mode-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #e3f2fd;
+        color: #0073bb;
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+      #refresh-btn {
+        padding: 8px 16px;
+        background: white;
+        color: #374151;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.875rem;
+        transition: all 0.15s;
+      }
+      #refresh-btn:hover {
+        background: #f3f4f6;
+        border-color: #9ca3af;
+      }
+
+      /* HMU Logo */
+      .hmu-logo {
+        width: 110px;
+        height: auto;
+        object-fit: contain;
+        border-radius: 50%;
+        background: white;
+        padding: 6px;
+        box-shadow: 0 4px 20px rgba(0,115,187,0.18), 0 1px 6px rgba(0,0,0,0.10);
+        margin-bottom: 8px;
+        border: 3px solid #e3f2fd;
+        transition: transform 0.3s;
+      }
+      .hmu-logo:hover {
+        transform: scale(1.06);
+      }
+      .hmu-logo-sm {
+        width: 38px;
+        height: auto;
+        object-fit: contain;
+        border-radius: 50%;
+        background: white;
+        padding: 2px;
+        border: 2px solid #e3f2fd;
+        box-shadow: 0 2px 8px rgba(0,115,187,0.15);
+        flex-shrink: 0;
+      }
     </style>
   </head>
   <body>
-    <h1>Techfest Chatbot</h1>
+
+    <!-- Chat Screen -->
+    <div id="chat-screen">
+      <div id="chat-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <img src="https://giaoduc247.vn/uploads/082021/images/yhanoi.jpeg" alt="HMU Logo" class="hmu-logo-sm" />
+          <h1>HMU Chatbot</h1>
+          <span id="chat-mode-badge" style="display:none;"></span>
+        </div>
+        <button id="refresh-btn" onclick="resetChat()">🔄 Làm mới</button>
+      </div>
 
     <div id="chat-container"></div>
-    <div style="display: flex">
+    <div id="input-area" style="display:none; flex-direction:row;">
       <input
         type="text"
         id="message-input"
-        placeholder="Type your message..."
+        placeholder="Nhập câu hỏi của bạn..."
       />
-      <button style="margin-left: 5px" id="send-btn">Send</button>
+      <button style="margin-left: 5px" id="send-btn">Gửi</button>
     </div>
+    </div> <!-- end #chat-screen -->
 
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
     <script>
@@ -327,7 +456,7 @@
       });
 
       const WS_ENDPOINT =
-        "wss://ffp5u185bd.execute-api.us-east-1.amazonaws.com/prod";
+        "wss://etw2maeiab.execute-api.us-east-1.amazonaws.com/prod";
       const API_KEY = "PeFAEI1wSy7uh4nGxa0Rt1bv1dueN17d2gZEuQR6";
       const CHUNK_SIZE = 32 * 1024;
       const PostStreamingStatus = {
@@ -345,6 +474,62 @@
       let loadingElement = null;
       let conversationId = null;
       let lastMessageId = null;
+      let selectedType = null;
+
+      function showSelectionPanel() {
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.innerHTML = '';
+        const panel = document.createElement('div');
+        panel.id = 'selection-panel';
+        panel.innerHTML = `
+          <div style="text-align:center;">
+            <img src="https://giaoduc247.vn/uploads/082021/images/yhanoi.jpeg" alt="HMU Logo" class="hmu-logo" />
+            <h2 style="margin:12px 0 6px;color:#111827;font-size:1.4rem;">Xin chào! Tôi có thể hỗ trợ gì cho bạn?</h2>
+            <p style="color:#6b7280;margin:0;font-size:0.95rem;">Vui lòng chọn loại chương trình đào tạo cần tư vấn</p>
+          </div>
+          <div class="selection-cards">
+            <div class="selection-card" onclick="enterChat('dai_hoc')">
+              <div class="card-icon">🎓</div>
+              <div class="card-label">Đại học</div>
+              <div class="card-sub">Chương trình đại học</div>
+            </div>
+            <div class="selection-card" onclick="enterChat('sau_dai_hoc')">
+              <div class="card-icon">📚</div>
+              <div class="card-label">Sau đại học</div>
+              <div class="card-sub">Thạc sĩ &amp; Tiến sĩ</div>
+            </div>
+          </div>
+        `;
+        chatContainer.appendChild(panel);
+      }
+
+      function enterChat(type) {
+        selectedType = type;
+        conversationId = null;
+        lastMessageId = null;
+        document.getElementById('chat-container').innerHTML = '';
+        const badge = document.getElementById('chat-mode-badge');
+        if (type === 'dai_hoc') {
+          badge.textContent = '🎓 Đại học';
+        } else {
+          badge.textContent = '📚 Sau đại học';
+        }
+        badge.style.display = 'inline-flex';
+        document.getElementById('input-area').style.display = 'flex';
+        document.getElementById('message-input').focus();
+      }
+
+      function resetChat() {
+        conversationId = null;
+        lastMessageId = null;
+        selectedType = null;
+        currentAssistantMessage = null;
+        const badge = document.getElementById('chat-mode-badge');
+        badge.textContent = '';
+        badge.style.display = 'none';
+        document.getElementById('input-area').style.display = 'none';
+        showSelectionPanel();
+      }
 
       // Simple UUID generator
       function generateUUID() {
@@ -386,7 +571,7 @@
           avatar.innerHTML = "👤";
         } else {
           avatar.innerHTML =
-            "<img src=\"https://techfest.vn/wp-content/uploads/2025/11/logotechfest2025.png\" alt=\"Techfest\" onerror=\"this.src='data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23FF9900' d='M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5z'/%3E%3C/svg%3E'\">";
+            "<img src='https://giaoduc247.vn/uploads/082021/images/yhanoi.jpeg' alt='HMU'>";
         }
 
         const contentDiv = document.createElement("div");
@@ -504,16 +689,21 @@
         const filterMetadataValue = {
           equals: {
             key: "type",
-            value: "dai_hoc",
+            value: selectedType,
           },
         };
         // console.log("[HTML] filterMetadata being sent:", JSON.stringify(filterMetadataValue));
 
+        const channelTag = selectedType === 'dai_hoc'
+          ? '[KÊNH: ĐẠI HỌC]'
+          : '[KÊNH: SAU ĐẠI HỌC]';
+        const taggedMessage = `${channelTag} ${message}`;
+
         const payloadObj = {
           conversationId: conversationId,
           message: {
-            content: [{ body: message, contentType: "text" }],
-            model: "claude-v3.7-sonnet",
+            content: [{ body: taggedMessage, contentType: "text" }],
+            model: "claude-v4.5-sonnet",
             role: "user",
             feedback: null,
             usedChunks: null,
@@ -524,11 +714,11 @@
           enableReasoning: false,
           filterMetadata: filterMetadataValue,
         };
-        console.log("[HTML] Full payload keys:", Object.keys(payloadObj));
-        console.log("[HTML] payloadObj.filterMetadata:", payloadObj.filterMetadata);
+        // console.log("[HTML] Full payload keys:", Object.keys(payloadObj));
+        // console.log("[HTML] payloadObj.filterMetadata:", payloadObj.filterMetadata);
         const payload = JSON.stringify(payloadObj);
-        console.log("[HTML] Payload length:", payload.length);
-        console.log("[HTML] filterMetadata in JSON string (check):", payload.includes('filterMetadata'));
+        // console.log("[HTML] Payload length:", payload.length);
+        // console.log("[HTML] filterMetadata in JSON string (check):", payload.includes('filterMetadata'));
 
         // Chunk payload
         const chunks = [];
@@ -657,6 +847,22 @@
         .addEventListener("keypress", (e) => {
           if (e.key === "Enter") sendMessage();
         });
+
+      // Check URL query param on load
+      // ?chatbot=daihoc  → vào thẳng đại học
+      // ?chatbot=saudaihoc → vào thẳng sau đại học
+      // (không có) → hiện panel chọn
+      (function initFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const chatbot = (params.get('chatbot') || '').toLowerCase().replace(/[\s_-]/g, '');
+        if (chatbot === 'daihoc') {
+          enterChat('dai_hoc');
+        } else if (chatbot === 'saudaihoc') {
+          enterChat('sau_dai_hoc');
+        } else {
+          showSelectionPanel();
+        }
+      })();
     </script>
   </body>
 </html>

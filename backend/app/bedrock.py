@@ -351,6 +351,55 @@ client = get_bedrock_runtime_client()
 class BedrockThrottlingException(Exception): ...
 
 
+class GuardrailBlockedError(Exception):
+    """Raised when ApplyGuardrail API blocks the user message."""
+
+    def __init__(self, blocked_response: str):
+        self.blocked_response = blocked_response
+        super().__init__(blocked_response)
+
+
+def apply_guardrail_check(
+    guardrail: BedrockGuardrailsModel,
+    message_content: list,
+) -> None:
+    """Check the latest user message against Bedrock Guardrails using the ApplyGuardrail API.
+
+    Only the newest user message is checked (not the full conversation history).
+    Raises GuardrailBlockedError if the message is blocked.
+    """
+    if not guardrail.is_guardrail_enabled:
+        return
+    if not guardrail.guardrail_arn or not guardrail.guardrail_version:
+        return
+
+    content = []
+    for item in message_content:
+        if hasattr(item, "content_type") and item.content_type == "text":
+            content.append({"text": {"text": item.body}})
+
+    if not content:
+        return
+
+    try:
+        response = client.apply_guardrail(
+            guardrailIdentifier=guardrail.guardrail_arn,
+            guardrailVersion=guardrail.guardrail_version,
+            source="INPUT",
+            content=content,
+        )
+    except ClientError as e:
+        logger.warning(f"ApplyGuardrail API call failed: {e}")
+        return
+
+    action = response.get("action", "NONE")
+    if action == "GUARDRAIL_INTERVENED":
+        outputs = response.get("outputs", [])
+        blocked_text = outputs[0]["text"] if outputs else "Message blocked by guardrail."
+        logger.info(f"Guardrail blocked the message. Response: {blocked_text}")
+        raise GuardrailBlockedError(blocked_text)
+
+
 def _is_conversation_role(role: str) -> TypeGuard[ConversationRoleType]:
     return role in ["user", "assistant"]
 

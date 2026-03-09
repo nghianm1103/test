@@ -7,6 +7,7 @@ from queue import SimpleQueue
 from threading import Thread
 
 import boto3
+from app.bedrock import GuardrailBlockedError
 from app.repositories.conversation import RecordNotFoundError
 from app.routes.schemas.conversation import ChatInput
 from app.stream import OnStopInput, OnThinking
@@ -310,6 +311,17 @@ def handler(event, context):
                     "statusCode": 404,
                     "body": json.dumps(
                         dict(status="ERROR", reason=f"Bot {BOT_ID} not found.")
+                    ),
+                }
+            except GuardrailBlockedError as e:
+                logger.info(f"Message blocked by guardrail: {e.blocked_response}")
+                return {
+                    "statusCode": 400,
+                    "body": json.dumps(
+                        dict(
+                            status="GUARDRAIL_BLOCKED",
+                            reason=e.blocked_response,
+                        )
                     ),
                 }
             except Exception as e:

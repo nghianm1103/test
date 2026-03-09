@@ -11,6 +11,7 @@ from typing import BinaryIO, Literal, TypedDict
 import boto3
 from app.agents.tools.agent_tool import ToolRunResult
 from app.auth import verify_token
+from app.bedrock import GuardrailBlockedError
 from app.repositories.conversation import RecordNotFoundError
 from app.routes.schemas.conversation import ChatInput
 from app.stream import OnStopInput, OnThinking
@@ -239,6 +240,18 @@ def process_chat_input(
                     )
                 ),
             }
+
+    except GuardrailBlockedError as e:
+        logger.info(f"Message blocked by guardrail: {e.blocked_response}")
+        return {
+            "statusCode": 400,
+            "body": json.dumps(
+                dict(
+                    status="GUARDRAIL_BLOCKED",
+                    reason=e.blocked_response,
+                )
+            ),
+        }
 
     except Exception as e:
         logger.exception(f"Failed to run stream handler: {e}")

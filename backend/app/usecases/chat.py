@@ -5,6 +5,8 @@ from app.agents.tools.agent_tool import ToolRunResult
 from app.agents.utils import get_tools
 from app.bedrock import (
     BedrockGuardrailsModel,
+    GuardrailBlockedError,
+    apply_guardrail_check,
     call_converse_api,
     compose_args_for_converse_api,
     is_tooluse_supported,
@@ -316,6 +318,11 @@ def chat(
 
     # Guardrails
     guardrail = bot.bedrock_guardrails if bot else None
+
+    # Check only the latest user message against guardrail before sending to model
+    if guardrail and not chat_input.continue_generate:
+        user_message = message_map[user_msg_id]
+        apply_guardrail_check(guardrail=guardrail, message_content=user_message.content)
 
     def on_tool_run_result(run_result: ToolRunResult):
         if run_result["status"] == "success":
