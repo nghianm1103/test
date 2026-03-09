@@ -48,7 +48,7 @@ ALLOWED_SIGN_UP_EMAIL_DOMAINS=""
 BEDROCK_REGION="us-east-1"
 CDK_JSON_OVERRIDE="{}"
 REPO_URL="https://github.com/nghianm1103/test.git"
-VERSION="main"
+VERSION="feature/guardrail"
 
 # Parse command-line arguments for customization
 while [[ "$#" -gt 0 ]]; do
